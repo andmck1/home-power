@@ -6,12 +6,15 @@ __description__ = 'Set of functions useful for preprocessing time series data.'
 # ---------------
 # IMPORTS -------
 # ---------------
+import numpy as np
+from keras.preprocessing.sequence import pad_sequences
+
 
 # ---------------
 # FUNCTIONS -----
 # ---------------
 
-def to_supervised(train_data, n_input, n_output):
+def to_supervised(train_data, n_input, n_output, walk_forward=False):
     """
     Create walk-forward training data from passed data and the number of points
     in each sequence value.
@@ -35,11 +38,17 @@ def to_supervised(train_data, n_input, n_output):
     td_l = td_shape[0]
 
     # Indices for getting data
-    x_indices = [range(i, i+n_input) for i in range(td_l-n_input-n_output)]
-    y_indices = [range(i, i+n_output) for i in range(n_input, td_l-n_output)]
+    if walk_forward:
+        x_indices = [range(0, i+n_input) for i in range(td_l-n_input-n_output)]
+        y_indices = [range(n_input, i+n_output) for i in range(n_input, td_l-n_output)]
 
-    # Get X and Y data
-    x = train_data[x_indices]
-    y = train_data[y_indices]
+        x = pad_sequences(np.array([np.array(train_data[idxs]) for idxs in x_indices]))
+        y = pad_sequences(np.array([np.array(train_data[idxs]) for idxs in y_indices]))
+    else:
+        x_indices = [range(i, i+n_input) for i in range(td_l-n_input-n_output)]
+        y_indices = [range(i, i+n_output) for i in range(n_input, td_l-n_output)]
+
+        x = train_data[x_indices]
+        y = train_data[y_indices]
 
     return x, y
